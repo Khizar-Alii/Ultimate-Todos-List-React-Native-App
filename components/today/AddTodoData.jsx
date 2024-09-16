@@ -10,16 +10,13 @@ import {
 import React, { useState } from "react";
 import { Colors } from "../../constants/Colors";
 import Ionicons from "@expo/vector-icons/Ionicons";
-import Feather from "@expo/vector-icons/Feather";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { Picker } from "@react-native-picker/picker";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { todos } from "../../constants/Todos";
 const AddTodoData = ({ setShowModal }) => {
   const [date, setDate] = useState(null);
-  const [time, setTime] = useState(null);
   const [showDatePicker, setShowDatePicker] = useState(false);
-  // const [showTimePicker, setShowTimePicker] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState();
   const [task, setTask] = useState();
   const [desc, setDesc] = useState();
@@ -33,29 +30,10 @@ const AddTodoData = ({ setShowModal }) => {
     setShowDatePicker(false);
   };
 
-  // Handle time picker change
-  // const onTimeChange = (event, selectedTime) => {
-  //   const currentTime = selectedTime || time;
-  //   setShowTimePicker(false);
-
-  //   const now = new Date();
-  //   if (date.toDateString() === now.toDateString() && currentTime < now) {
-  //     // If it's today and time is in the past, disallow it
-  //     alert("Cannot select past time!");
-  //   } else {
-  //     setTime(currentTime);
-  //   }
-  // };
-
   // Open date picker when TouchableOpacity is clicked
   const showDatePickerHandler = () => {
     setShowDatePicker(true);
   };
-
-  // Open time picker when TouchableOpacity is clicked
-  // const showTimePickerHandler = () => {
-  //   setShowTimePicker(true);
-  // };
 
   // submitting the Todo
 
@@ -71,7 +49,6 @@ const AddTodoData = ({ setShowModal }) => {
         id: Date.now(),
         title: task,
         desc: desc,
-        time: time,
         date: date,
         isChecked: false,
         category : selectedCategory,
@@ -122,35 +99,6 @@ const AddTodoData = ({ setShowModal }) => {
         </TouchableOpacity>
       </View>
 
-      {/* {date && (
-        <View style={styles.inputContainer}>
-          <Text style={styles.label}>Pick Time</Text>
-          <TouchableOpacity
-            style={styles.dateBtn}
-            onPress={showTimePickerHandler}
-          >
-            <Text style={{ color: Colors.grey }}>
-              {time
-                ? time.toLocaleTimeString([], {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })
-                : "When you like to complete the task"}
-            </Text>
-            <Feather
-              name="clock"
-              size={24}
-              color="black"
-              style={{
-                position: "absolute",
-                right: 5,
-                bottom: 5,
-              }}
-            />
-          </TouchableOpacity>
-        </View>
-      )} */}
-
       {/* Date Picker component */}
       {showDatePicker && (
         <DateTimePicker
@@ -162,16 +110,6 @@ const AddTodoData = ({ setShowModal }) => {
           minimumDate={new Date()}
         />
       )}
-
-      {/* Time Picker component */}
-      {/* {showTimePicker && (
-        <DateTimePicker
-          value={time || new Date()}
-          mode="time"
-          display="default"
-          onChange={onTimeChange}
-        />
-      )} */}
       <View style={styles.inputContainer}>
         <Text style={styles.label}>Add to Category</Text>
         <Picker
