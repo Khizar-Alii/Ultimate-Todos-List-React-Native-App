@@ -6,6 +6,7 @@ import Modal from "@/components/ModalData";
 import { Colors } from "@/constants/Colors";
 
 const withCustomHeader = (WrappedComponent) => {
+  // custom header for each screen added a left side bar modal has some navigations and day , date etc , and some other features like settings, rate the aoo,backup and contact us which is to be added later.
   return (props) => {
     const navigation = useNavigation();
     const [modalVisible, setModalVisible] = useState(false);

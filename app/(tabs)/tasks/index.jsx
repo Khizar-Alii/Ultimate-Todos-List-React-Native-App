@@ -8,7 +8,7 @@ import CheckBox from "react-native-check-box";
 import { router } from "expo-router";
 
 const Tasks = () => {
-  const [finishedTask, setFinishedTask] = useState([]);
+  const [finishedTask, setFinishedTask] = useState([]); 
   const [remainingTasks, setRemainingTasks] = useState([]);
   const db = useSQLiteContext();
 
@@ -17,11 +17,13 @@ const Tasks = () => {
     fetchTodos();
   }, []);
 
+  // to get both the finished tasks and remaining tasks
   const fetchTodos = async () => {
     await fetchRemainingTodos();
     await fetchFinishedTodos();
   };
 
+  // to get and remaining tasks
   const fetchRemainingTodos = async () => {
     try {
       const remaining = await db.getAllAsync('SELECT * FROM todos WHERE isChecked = 0');
@@ -30,7 +32,7 @@ const Tasks = () => {
       console.log("Error while fetching remaining todos...", error);
     }
   };
-
+  // to get and finished tasks
   const fetchFinishedTodos = async () => {
     try {
       const finished = await db.getAllAsync('SELECT * FROM todos WHERE isChecked = 1');
@@ -88,7 +90,7 @@ const TodosList = ({ filteredTodos, onTodoUpdate }) => {
       console.error("Error updating todo:", error);
     }
   };
-
+  // route to the details screen to see the details of the todo
   const handlePress = (item) => {
     router.push({
       pathname: "/categoryDetails/Details",

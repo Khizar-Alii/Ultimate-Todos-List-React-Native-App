@@ -1,18 +1,17 @@
 import { StyleSheet, Text, View, TouchableOpacity, Image, Alert } from "react-native";
 import React, { useState, useEffect } from "react";
 import Modal from "@/components/ModalData";
-import { router, useLocalSearchParams, useNavigation } from "expo-router";
+import { useLocalSearchParams, useNavigation } from "expo-router";
 import { Colors } from "../../constants/Colors";
 import FontAwesome6 from "@expo/vector-icons/FontAwesome6";
-import { useSQLiteContext } from "expo-sqlite"; // Import useSQLiteContext
+
 
 const Details = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const { item } = useLocalSearchParams();
   const parsedItem = item ? JSON.parse(item) : null;
   const navigation = useNavigation();
-  const db = useSQLiteContext(); 
-
+// custom header for navigation screen
   useEffect(() => {
     navigation.setOptions({
       headerShown: true,
@@ -47,19 +46,8 @@ const Details = () => {
     });
   }, []);
 
-  // Function to delete the todo item from the database
-  const handleDelete = async () => {
-    try {
-      // Delete the item from the database
-      await db.runAsync('DELETE FROM todos WHERE id = ?', [parsedItem.id]);
-      // Navigate back to the previous screen
-      router.replace("/(tabs)/today")
-    } catch (error) {
-      console.error("Error deleting todo:", error);
-      Alert.alert("Error", "Failed to delete the item.");
-    }
-  };
 
+ // this just display the details of the todo with some icons
   return (
     <View style={styles.screen}>
       <Modal modalVisible={modalVisible} setModalVisible={setModalVisible} />
@@ -121,34 +109,6 @@ const Details = () => {
           <Text style={styles.value}>{parsedItem?.isChecked == 0 ? "Not Completed" : 'Completed'}</Text>
         </View>
       </View>
-      {/* Buttons Section */}
-      <View style={styles.buttonContainer}>
-        <TouchableOpacity
-          style={styles.button}
-          onPress={handleDelete} // Call handleDelete on press
-        >
-          <Image
-            source={{
-              uri: "https://cdn-icons-png.flaticon.com/128/2603/2603105.png",
-            }}
-            style={styles.buttonIcon}
-          />
-          <Text style={styles.buttonText}>Delete</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.button}
-          onPress={() => console.log("Edit action")}
-        >
-          <Image
-            source={{
-              uri: "https://cdn-icons-png.flaticon.com/128/9512/9512757.png",
-            }}
-            style={styles.buttonIcon}
-          />
-          <Text style={styles.buttonText}>Edit</Text>
-        </TouchableOpacity>
-      </View>
     </View>
   );
 };
@@ -201,29 +161,5 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     marginTop: 5,
     lineHeight: 28,
-  },
-  buttonContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    width: "100%",
-  },
-  button: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: Colors.primary,
-    padding: 15,
-    borderRadius: 10,
-    width: "45%",
-    justifyContent: "center",
-  },
-  buttonIcon: {
-    width: 24,
-    height: 24,
-    marginRight: 10,
-  },
-  buttonText: {
-    fontSize: 16,
-    color: "#fff",
-    fontWeight: "600",
   },
 });

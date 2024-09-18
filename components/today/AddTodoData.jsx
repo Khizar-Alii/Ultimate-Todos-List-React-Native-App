@@ -21,6 +21,8 @@ const AddTodoData = ({ setShowModal, onTodoAdded }) => {
   const [task, setTask] = useState("");
   const [desc, setDesc] = useState("");
 
+  // this component is pass by addTodoModal to add the todo
+
   const db = useSQLiteContext();
 
   const handleSubmitData = async () => {

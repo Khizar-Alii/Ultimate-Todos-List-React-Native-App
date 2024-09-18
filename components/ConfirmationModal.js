@@ -3,6 +3,9 @@ import { View, Text, Modal, TouchableOpacity, StyleSheet } from "react-native";
 import { Colors } from "../constants/Colors";
 
 const ConfirmationModal = ({ visible, onConfirm, onCancel, habit }) => {
+  
+  // this is the ConfirmationModal habbit modal  which takes visible to handle opening and closing of modal and habit which is to be deleted and onConfirm the todo get deleted logic for this is defined in the habbit screen and onCancel which just cancel the modal
+
   return (
     <Modal
       transparent={true}

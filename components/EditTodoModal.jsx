@@ -20,6 +20,9 @@ const EditTodoModal = ({ showModal, setShowModal, todo, onUpdate }) => {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const db = useSQLiteContext();
 
+
+  // this is the edit todo modal  which takes showModal & setshowmodal to handle opening and closing of modal and todo which is to be edited and onUpdate to update the ui immediately after the editing the todo
+
   useEffect(() => {
     if (todo) {
       setTask(todo.task);

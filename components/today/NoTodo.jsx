@@ -2,6 +2,7 @@ import {  Text, View,Image } from "react-native";
 import React from "react";
 import { Colors } from "../../constants/Colors";
 const NoTodo = () => {
+  // when list is empty show this no todo
   return (
     <View style={{ alignItems: "center"}}>
       <View

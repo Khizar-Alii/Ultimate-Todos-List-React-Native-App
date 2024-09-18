@@ -4,6 +4,7 @@ import { Colors } from "@/constants/Colors";
 import AddTodoData from "../components/today/AddTodoData";
 
 const AddTodoModal = ({ showModal, setShowModal, onTodoAdded }) => {
+  // this is the add todo modal which has a component AddTodoData which takes onTodoAdded & setshowmodal to handle opening and closing of modal and onHabbitAdded to update the ui immediately after the adding the todo
   return (
     <Modal
       animationType="slide"

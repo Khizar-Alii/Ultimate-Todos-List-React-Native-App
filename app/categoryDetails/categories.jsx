@@ -11,7 +11,6 @@ import { router, useLocalSearchParams, useNavigation } from "expo-router";
 import { Colors } from "../../constants/Colors";
 import NoTodo from "../../components/today/NoTodo";
 import FontAwesome6 from "@expo/vector-icons/FontAwesome6";
-import TodosList from "../../components/today/TodosList";
 import Modal from "@/components/ModalData";
 import { useSQLiteContext } from "expo-sqlite";
 
@@ -25,6 +24,7 @@ const Categories = () => {
   const navigation = useNavigation();
   const db = useSQLiteContext();
 
+  // custom header for the category specific todos
   useEffect(() => {
     // Set header options for the screen
     navigation.setOptions({
@@ -60,9 +60,11 @@ const Categories = () => {
     });
   }, []);
 
+  // fetchCategoryTodos when the component mounts
   useEffect(() => {
     fetchCategoryTodos();
   }, [parsedItem]);
+
   // Fetch todos for the selected category from the database
   const fetchCategoryTodos = async () => {
     try {
@@ -78,7 +80,7 @@ const Categories = () => {
     }
   };
 
-
+  // route to the details screen
   const handlePress = (item) => {
     router.push({
       pathname: "/categoryDetails/Details",

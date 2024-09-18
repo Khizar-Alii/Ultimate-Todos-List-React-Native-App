@@ -15,6 +15,9 @@ const EditHabitModal = ({ showModal, setShowModal, habit, onUpdate }) => {
   const [habitName, setHabitName] = useState("");
   const [description, setDescription] = useState("");
 
+
+    // this is the edit habbit modal  which takes showModal & setshowmodal to handle opening and closing of modal and habit which is to be edited and onUpdate to update the ui immediately after the editing the todo
+
   const db = useSQLiteContext();
 
   useEffect(() => {

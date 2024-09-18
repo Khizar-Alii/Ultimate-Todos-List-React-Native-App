@@ -16,16 +16,17 @@ import ConfirmationModal from "../../../components/ConfirmationModal";
 import { useSQLiteContext } from "expo-sqlite";
 
 const Habbits = () => {
-  const [habitModal, setHabitModal] = useState(false);
-  const [editModal, setEditModal] = useState(false);
-  const [editHabit, setEditHabit] = useState(null);
+  const [habitModal, setHabitModal] = useState(false); // states to conditionally open and close add habbit modal
+  const [editModal, setEditModal] = useState(false); // states to conditionally open and close edit habbit modal
+  const [editHabit, setEditHabit] = useState(null); // states to conditionally open and close confirmation of delete habbit
   const [confirmationModal, setConfirmationModal] = useState(false);
-  const [habitToDelete, setHabitToDelete] = useState(null);
-  const [habitsByCategory, setHabitsByCategory] = useState({});
+  const [habitToDelete, setHabitToDelete] = useState(null); // which habbit is clicked to delete
+  const [habitsByCategory, setHabitsByCategory] = useState({}); //store the habbits by category 
  
   
   const db = useSQLiteContext();
 
+ //fetch habbits by category when component mount 
   useEffect(() => {
     fetchHabits();
   }, []);
@@ -48,15 +49,13 @@ const Habbits = () => {
         return acc;
       }, {});
   
-      // Debugging: Log the grouped habits
-      console.log("Habits by category:", habits);
-  
       setHabitsByCategory(habits);
     } catch (error) {
       console.log("Error while fetching habits...", error);
     }
   };
 
+  // delete the habbit from db and update the ui
   const deleteHabit = async (id) => {
     try {
       await db.runAsync("DELETE FROM habits WHERE id = ?", id);
@@ -65,12 +64,13 @@ const Habbits = () => {
       console.log("Error while deleting habit...", error);
     }
   };
-
+  // open the edit habbit modal and pass the habbit to be edit
   const openEditModal = (habit) => {
     setEditHabit(habit);
     setEditModal(true);
   };
 
+  // open the delete habbit modal and pass the habbit to be delete
   const openConfirmationModal = (habit) => {
     setHabitToDelete(habit);
     setConfirmationModal(true);
@@ -130,23 +130,27 @@ const Habbits = () => {
         contentContainerStyle={{ paddingBottom: 100 }}
         style={styles.container}
       >
+        {/* to add the habbit */}
         <HabbitsModal
           showModal={habitModal}
           setShowModal={setHabitModal}
           onHabbitAdded={fetchHabits}
         />
+        {/* to edit the habbit */}
         <EditHabitModal
           showModal={editModal}
           setShowModal={setEditModal}
           habit={editHabit}
           onUpdate={fetchHabits}
         />
+        {/* to delete the habbit */}
         <ConfirmationModal
           visible={confirmationModal}
           onConfirm={handleConfirmDelete}
           onCancel={() => setConfirmationModal(false)}
           habit={habitToDelete}
         />
+        {/* map the categories */}
         {categories.map(renderCategory)}
       </ScrollView>
       <Plus onPress={() => setHabitModal(true)} />

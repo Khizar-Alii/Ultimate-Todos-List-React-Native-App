@@ -3,6 +3,8 @@ import React from "react";
 import AntDesign from "@expo/vector-icons/AntDesign";
 import { Colors } from "../../constants/Colors";
 
+//  a plus icon when clicked modal open, custom button used on many screens
+
 const Plus = ({onPress}) => {
   return (
     <TouchableOpacity style={styles.btnContainer} onPress={onPress}>

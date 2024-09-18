@@ -22,6 +22,8 @@ const AddHabbitData = ({ setShowModal, onHabbitAdded }) => {
   const [desc, setDesc] = useState("");
   const [frequency, setFrequency] = useState("Daily");
 
+  // this component is to add the habbit into the database
+
   const db = useSQLiteContext();
 
   const handleSubmitData = async () => {

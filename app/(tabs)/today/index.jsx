@@ -8,6 +8,7 @@ import {
   Image,
   Alert,
 } from "react-native";
+// TO define the same header for everyscreen , so i made a highOrder function which take component as a prop and then in that i set the Custom header
 import withCustomHeader from "../../../components/withCustomHeader/withCustomHeader";
 import { Colors } from "../../../constants/Colors";
 import Plus from "../../../components/CustomButton/Plus";
@@ -16,20 +17,24 @@ import AddTodoModal from "../../../components/AddTodoModal";
 import EditTodoModal from "../../../components/EditTodoModal"; 
 import { useSQLiteContext } from "expo-sqlite";
 import CheckBox from "react-native-check-box";
+import { router } from "expo-router";
 
 const Today = () => {
-  const [todos, setTodos] = useState([]);
-  const [showModal, setShowModal] = useState(false);
-  const [editModal, setEditModal] = useState(false);
-  const [editTodo, setEditTodo] = useState(null);
-  const[refreshing,setRefreshing] = useState(false);
+  const [todos, setTodos] = useState([]); //store all the todos
+  const [showModal, setShowModal] = useState(false); // to open a modal for adding todos
+  const [editModal, setEditModal] = useState(false); // to open a edit todo modal
+  const [editTodo, setEditTodo] = useState(null);// pass the todo to edit
+  const[refreshing,setRefreshing] = useState(false); // to refresh the todos
 
   const db = useSQLiteContext();
 
   useEffect(() => {
+    // when mount Get all todos
     fetchTodos();
   }, []);
 
+
+  // to fetch all the todos from the sqllite DB
   const fetchTodos = async () => {
     try {
       const filteredTodos = await db.getAllAsync("SELECT * FROM todos");
@@ -39,6 +44,8 @@ const Today = () => {
     }
   };
 
+
+  // function when you click on the checkbox it mark the checkbox is checked and then update the checkbox in DB and the todos list
   const handleCheckBoxClick = async (item) => {
     const newCheckedState = item.isChecked === 1 ? 0 : 1;
     try {
@@ -57,13 +64,17 @@ const Today = () => {
     }
   };
 
-  // const handlePress = (item) => {
-  //   router.push({
-  //     pathname: "/categoryDetails/Details",
-  //     params: { item: JSON.stringify(item) },
-  //   });
-  // };
 
+
+  // route to the details screen and to show the details of the todo
+  const handlePress = (item) => {
+    router.push({
+      pathname: "/categoryDetails/Details",
+      params: { item: JSON.stringify(item) },
+    });
+  };
+
+  // function to delete the todo from database
   const deleteTodo = (id) => {
     Alert.alert(
       "Confirm Deletion",
@@ -84,11 +95,13 @@ const Today = () => {
     );
   };
 
+  // function to accept the current todo and open the edit modal
   const openEditModal = (todo) => {
     setEditTodo(todo);
     setEditModal(true);
   };
 
+  // passed this view to the flatlist which accepts the item as a param and responsible for the display of the content
   const todoView = ({ item }) => (
     <View style={styles.todoContainer}>
       <View
@@ -103,7 +116,7 @@ const Today = () => {
             checkedCheckBoxColor={Colors.primary}
           />
         </View>
-        <TouchableOpacity style={styles.todoTextContainer}>
+        <TouchableOpacity style={styles.todoTextContainer} onPress={()=>handlePress(item)}>
           <Text numberOfLines={1} style={styles.title}>
             {item.task}
           </Text>
@@ -134,7 +147,7 @@ const Today = () => {
     <View style={styles.container}>
       <View style={styles.content}>
         {todos.length === 0 ? (
-          <NoTodo />
+          <NoTodo /> // just a picture and a text that says no todo
         ) : (
           <FlatList
             data={todos}
@@ -147,13 +160,15 @@ const Today = () => {
           />
         )}
       </View>
-
-      <Plus onPress={() => setShowModal(true)} />
+      {/* plus opens a modal to add the todo */}
+      <Plus onPress={() => setShowModal(true)} /> 
+        {/* AddTodoModal this component/modal takes props showModal setShowModal and onTodoAdded -> showModal & setShowModal to handle open and close modal and onTodoAdded passed this when todo is added update the todos in Ui */}
       <AddTodoModal
         showModal={showModal}
         setShowModal={setShowModal}
         onTodoAdded={fetchTodos}
       />
+      {/* EditTodoModal this component/modal takes props showModal setShowModal and todo,onUpdate -> showModal & setShowModal to handle open and close modal and todo is the current todo to be edit & onUpdate to call the fetchTodos after editing so the updated todo can be seen. */}
       <EditTodoModal
         showModal={editModal}
         setShowModal={setEditModal}

@@ -2,7 +2,8 @@ import React, { useState } from "react";
 import { View, Text, StyleSheet, FlatList, Image, TouchableOpacity } from "react-native";
 import withCustomHeader from "../../../components/withCustomHeader/withCustomHeader";
 import { Colors } from "../../../constants/Colors";
-import { categories } from "../../../constants/categories";
+// this is the constant that i added some categories like work , family,other etc
+import { categories } from "../../../constants/categories"; 
 import { useSQLiteContext } from "expo-sqlite"; 
 import { router } from "expo-router";
 
@@ -11,7 +12,7 @@ const Category = () => {
 
 
 
-  // Function to handle category click
+  // when category is clicked it fetches the todos that matches with that category and then route to the categories screen to show the todos of that category
   const handlePress = async (item) => {
     try {
       const todos = await db.getAllAsync('SELECT * FROM todos WHERE selectedCategory = ?', item.name);

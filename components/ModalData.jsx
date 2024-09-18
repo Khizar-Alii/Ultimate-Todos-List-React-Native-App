@@ -8,6 +8,7 @@ import Feather from '@expo/vector-icons/Feather';
 import { router } from "expo-router";
 
 
+// this is side bar modal which has some navigations and other details as well for this the logic is define in the high order component which handles opening and closing of this modal.
 
 export default function ModalData({ modalVisible, setModalVisible }) {
     const route = useRoute();

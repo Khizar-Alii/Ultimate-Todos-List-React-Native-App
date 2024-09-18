@@ -1,5 +1,5 @@
 import { Tabs } from "expo-router";
-import { Image, StyleSheet } from "react-native";
+import {  StyleSheet } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { Colors } from "@/constants/Colors";
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';

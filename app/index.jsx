@@ -1,7 +1,7 @@
 import { Colors } from "@/constants/Colors";
-import { router, useRouter } from "expo-router";
+import {  useRouter } from "expo-router";
 import React, { useRef } from "react";
-import { Text, View, Image, StyleSheet, Button, TouchableOpacity } from "react-native";
+import { Text, View, Image, StyleSheet,  TouchableOpacity } from "react-native";
 import Onboarding from "react-native-onboarding-swiper";
 import Animated, {
   FadeIn,
@@ -13,11 +13,8 @@ export default function Index() {
   const handleNext = () => {
     onboardingRef.current?.goNext(); 
   };
-
-
-  
-
   return (
+    //onBoarding screen to display some images and text when app starts
     <Onboarding
       DotComponent={Dots}
       NextButtonComponent={() => <Next onNext={handleNext} />}
@@ -138,7 +135,6 @@ const Dots = ({ isLight, selected }) => {
 
 
 // done button
-
 const Done = () => {
   const router = useRouter();
 

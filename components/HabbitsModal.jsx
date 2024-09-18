@@ -3,6 +3,9 @@ import { View, Alert, Modal, StyleSheet } from "react-native";
 import { Colors } from "@/constants/Colors";
 import AddHabbitData from "../components/habbits/AddHabbitData";
 
+
+// this is the habbits modal which has a component AddHabbitData which takes setshowmodal to handle opening and closing of modal and onHabbitAdded to update the ui immediately after the adding the todo
+
 const HabbitsModal = ({ showModal, setShowModal, onHabbitAdded }) => {
   return (
     <Modal
