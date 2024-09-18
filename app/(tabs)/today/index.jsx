@@ -1,168 +1,232 @@
 import React, { useState, useEffect } from "react";
 import {
   View,
-  FlatList,
   StyleSheet,
+  FlatList,
   TouchableOpacity,
   Text,
+  Image,
+  Alert,
 } from "react-native";
 import withCustomHeader from "../../../components/withCustomHeader/withCustomHeader";
-import useTodayDate from "../../../hooks/useTodayDate";
 import { Colors } from "../../../constants/Colors";
 import Plus from "../../../components/CustomButton/Plus";
-import { todos } from "../../../constants/Todos";
 import NoTodo from "../../../components/today/NoTodo";
-import TodosList from "../../../components/today/TodosList";
 import AddTodoModal from "../../../components/AddTodoModal";
+import EditTodoModal from "../../../components/EditTodoModal"; 
+import { useSQLiteContext } from "expo-sqlite";
+import CheckBox from "react-native-check-box";
 
 const Today = () => {
-  const [filteredTodos, setFilteredTodos] = useState([]);
+  const [todos, setTodos] = useState([]);
   const [showModal, setShowModal] = useState(false);
+  const [editModal, setEditModal] = useState(false);
+  const [editTodo, setEditTodo] = useState(null);
+  const[refreshing,setRefreshing] = useState(false);
 
-  // call the custom hook which returns the days and todayIndex
-  const { days, todayIndex, setTodayIndex } = useTodayDate();
+  const db = useSQLiteContext();
 
-  // Filter todos based on the initial date when the component mounts
   useEffect(() => {
-    const initialDate = days[todayIndex]; // e.g., "Sat 14 Sep 2024"
-    if (initialDate) {
-      const dateParts = initialDate.split(" ");
-      const formattedDate = `${dateParts[1]} ${dateParts[2]}, ${dateParts[3]}`; // "14 Sep, 2024"
-      const filtered = todos.filter((todo) => todo.date === formattedDate);
-      setFilteredTodos(filtered);
+    fetchTodos();
+  }, []);
+
+  const fetchTodos = async () => {
+    try {
+      const filteredTodos = await db.getAllAsync("SELECT * FROM todos");
+      setTodos(filteredTodos);
+    } catch (error) {
+      console.log("Error while fetching todos...", error);
     }
-  }, [days, todayIndex]);
-
-  // this function will filter todos when a new date is selected
-  const handlePress = (index) => {
-    setTodayIndex(index);
-    const selectedDate = days[index]; // e.g., "Sat 14 Sep 2024"
-    const dateParts = selectedDate.split(" ");
-    const formattedDate = `${dateParts[1]} ${dateParts[2]}, ${dateParts[3]}`;
-
-    // Filter todos based on the selected date
-    const filtered = todos.filter((todo) => todo.date === formattedDate);
-    setFilteredTodos(filtered);
   };
 
-  // to represent the today's date
-  const DateView = ({ item, index }) => {
-    const isToday = index === todayIndex;
-    const day = item.split(" ")[0]; // "Thu"
-    const date = item.split(" ")[1]; // "12"
-    const month = item.split(" ")[2]; // "Sep"
-    const year = item.split(" ")[3]; // "2024"
-    return (
-      <TouchableOpacity
-        style={styles.dayContainer}
-        onPress={() => handlePress(index)}
-      >
-        <View
-          style={[
-            styles.dayContent,
-            isToday ? styles.activeDayContent : styles.inActiveDayContent,
-          ]}
-        >
-          <Text
-            style={[
-              styles.dayText,
-              isToday ? styles.activeText : styles.inactiveText,
-            ]}
-          >
-            {day}
-          </Text>
-          <Text
-            style={[
-              styles.dateText,
-              isToday ? styles.activeDateText : styles.inactiveText,
-            ]}
-          >
-            {date}
-          </Text>
-        </View>
-      </TouchableOpacity>
+  const handleCheckBoxClick = async (item) => {
+    const newCheckedState = item.isChecked === 1 ? 0 : 1;
+    try {
+      await db.runAsync("UPDATE todos SET isChecked = ? WHERE id = ?", [
+        newCheckedState,
+        item.id,
+      ]);
+
+      setTodos((prevTodos) =>
+        prevTodos.map((todo) =>
+          todo.id === item.id ? { ...todo, isChecked: newCheckedState } : todo
+        )
+      );
+    } catch (error) {
+      console.error("Error updating todo:", error);
+    }
+  };
+
+  // const handlePress = (item) => {
+  //   router.push({
+  //     pathname: "/categoryDetails/Details",
+  //     params: { item: JSON.stringify(item) },
+  //   });
+  // };
+
+  const deleteTodo = (id) => {
+    Alert.alert(
+      "Confirm Deletion",
+      "Are you sure you want to delete this todo?",
+      [
+        { text: "Cancel", style: "cancel" },
+        { text: "Delete", onPress: async () => {
+            try {
+              await db.runAsync("DELETE FROM todos WHERE id = ?", id);
+              fetchTodos();
+            } catch (error) {
+              console.log("Error while deleting todo...", error);
+            }
+          }
+        },
+      ],
+      { cancelable: true }
     );
   };
 
-  return (
-    <View style={{ backgroundColor: Colors.black, flex: 1,paddingBottom : 80 }}>
-      {/* to create a date view on top */}
-      <View>
-        <FlatList
-          data={days}
-          renderItem={DateView}
-          keyExtractor={(item) => item.toString()}
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.flatListContainer}
-          initialScrollIndex={todayIndex}
-          getItemLayout={(data, index) => ({
-            length: 80,
-            offset: 80 * index,
-            index,
-          })}
-        />
-      </View>
+  const openEditModal = (todo) => {
+    setEditTodo(todo);
+    setEditModal(true);
+  };
 
-      <View style={{flex : 1}}>
-        {/* Show this when todos are empty or not */}
-        {filteredTodos.length === 0 ? (
+  const todoView = ({ item }) => (
+    <View style={styles.todoContainer}>
+      <View
+        style={styles.todoContent}
+      >
+        <View style={styles.checkboxContainer}>
+          <CheckBox
+            checkBoxColor={Colors.grey}
+            onClick={() => handleCheckBoxClick(item)}
+            style={styles.checkbox}
+            isChecked={item.isChecked === 1}
+            checkedCheckBoxColor={Colors.primary}
+          />
+        </View>
+        <TouchableOpacity style={styles.todoTextContainer}>
+          <Text numberOfLines={1} style={styles.title}>
+            {item.task}
+          </Text>
+          <Text numberOfLines={1} style={styles.desc}>
+            {item.desc}
+          </Text>
+          <Text style={styles.date}>{item.date}</Text>
+        </TouchableOpacity>
+        <View style={styles.iconContainer}>
+          <TouchableOpacity onPress={() => deleteTodo(item.id)}>
+            <Image
+              source={{ uri: "https://cdn-icons-png.flaticon.com/128/2603/2603105.png" }}
+              style={styles.icon}
+            />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => openEditModal(item)}>
+            <Image
+              source={{ uri: "https://cdn-icons-png.flaticon.com/128/143/143437.png" }}
+              style={styles.icon}
+            />
+          </TouchableOpacity>
+        </View>
+      </View>
+    </View>
+  );
+
+  return (
+    <View style={styles.container}>
+      <View style={styles.content}>
+        {todos.length === 0 ? (
           <NoTodo />
         ) : (
-          <TodosList filteredTodos={filteredTodos} />
+          <FlatList
+            data={todos}
+            renderItem={todoView}
+            refreshing={refreshing}
+            onRefresh={()=>fetchTodos()}
+            keyExtractor={(item) => item.id.toString()}
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.flatListContainer}
+          />
         )}
       </View>
 
-      {/* plus icon to add the todos */}
       <Plus onPress={() => setShowModal(true)} />
-      <AddTodoModal showModal={showModal} setShowModal={setShowModal} />
+      <AddTodoModal
+        showModal={showModal}
+        setShowModal={setShowModal}
+        onTodoAdded={fetchTodos}
+      />
+      <EditTodoModal
+        showModal={editModal}
+        setShowModal={setEditModal}
+        todo={editTodo}
+        onUpdate={fetchTodos}
+      />
     </View>
   );
 };
 
 const styles = StyleSheet.create({
+  container: {
+    backgroundColor: Colors.black,
+    flex: 1,
+    paddingBottom: 80,
+    paddingTop: 20,
+  },
+  content: {
+    flex: 1,
+  },
   flatListContainer: {
-    paddingVertical: 20,
+    paddingHorizontal: 20,
   },
-  dayContainer: {
-    width: 80,
+  todoContainer: {
+    marginBottom: 10,
+  },
+  todoContent: {
+    backgroundColor: Colors.dark,
+    paddingVertical: 10,
+    paddingHorizontal: 10,
+    borderRadius: 15,
+    flexDirection: "row",
     alignItems: "center",
+    overflow: "hidden",
   },
-  dayContent: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+  checkboxContainer: {
+    width: 24,
+    height: 24,
     justifyContent: "center",
     alignItems: "center",
   },
-  activeDayContent: {
-    backgroundColor: Colors.primary,
+  checkbox: {
+    transform: [{ scale: 0.7 }],
   },
-  inActiveDayContent: {
-    backgroundColor: Colors.dark,
+  todoTextContainer: {
+    flex: 1,
+    marginRight: 10,
   },
-  dayText: {
-    fontSize: 12,
-    fontWeight: "bold",
-    textTransform: "uppercase",
-  },
-  dateText: {
+  title: {
+    color: Colors.light,
+    fontWeight: "700",
     fontSize: 16,
-    fontWeight: "bold",
+    letterSpacing: 1,
   },
-  activeDateText: {
-    color: Colors.light,
-    backgroundColor: Colors.primaryLight,
-    borderRadius: 99,
-    textAlign: "center",
-    paddingHorizontal: 8,
-    paddingVertical: 6,
+  desc: {
+    color: Colors.grey,
+    fontWeight: "300",
+    fontSize: 12,
+    paddingVertical: 4,
   },
-  activeText: {
-    color: Colors.light,
+  date: {
+    color: Colors.grey,
+    fontWeight: "600",
+    fontSize: 15,
   },
-  inactiveText: {
-    color: "#999999",
+  iconContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  icon: {
+    width: 24,
+    height: 24,
+    marginHorizontal: 5,
   },
 });
 

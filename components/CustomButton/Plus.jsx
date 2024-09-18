@@ -21,7 +21,8 @@ const styles = StyleSheet.create({
         right : 20,
         bottom : 70,
         backgroundColor : Colors.primary,
-        borderRadius : 99
+        borderRadius : 99,
+        zIndex : 999
     },
     btnText:{}
 });

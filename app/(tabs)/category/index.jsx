@@ -1,27 +1,41 @@
-import React from "react";
-import { View, Text, StyleSheet, FlatList, Image,TouchableOpacity } from "react-native";
+import React, { useState } from "react";
+import { View, Text, StyleSheet, FlatList, Image, TouchableOpacity } from "react-native";
 import withCustomHeader from "../../../components/withCustomHeader/withCustomHeader";
 import { Colors } from "../../../constants/Colors";
 import { categories } from "../../../constants/categories";
+import { useSQLiteContext } from "expo-sqlite"; 
 import { router } from "expo-router";
 
 const Category = () => {
-  const handlePress = (item) => {
-    router.push({
-      pathname: "/categoryDetails/categories",
-      params: { item: JSON.stringify(item) }, 
-    });
+  const db = useSQLiteContext(); 
+
+
+
+  // Function to handle category click
+  const handlePress = async (item) => {
+    try {
+      const todos = await db.getAllAsync('SELECT * FROM todos WHERE selectedCategory = ?', item.name);
+      router.push({
+        pathname: "/categoryDetails/categories",
+        params: {
+          item: JSON.stringify(item.name),  
+          todos: JSON.stringify(todos) 
+        },
+      });
+    } catch (error) {
+      console.error("Error fetching todos for category:", error);
+    }
   };
+
   return (
-    <View style={{ backgroundColor: Colors.black, flex: 1,
-    paddingBottom : 80,padding : 15}}>
+    <View style={{ backgroundColor: Colors.black, flex: 1, paddingBottom: 80, padding: 15 }}>
       <FlatList
         data={categories}
         renderItem={({ item }) => (
-          <TouchableOpacity style={styles.listContainer} onPress={()=>handlePress(item)}>
+          <TouchableOpacity style={styles.listContainer} onPress={() => handlePress(item)}>
             <Image
               source={{ uri: item.image }}
-              style={{ width: 30, height: 30,borderWidth:1,borderColor:Colors.grey,padding : 40,borderRadius :200 }}
+              style={{ width: 30, height: 30, borderWidth: 1, borderColor: Colors.grey, padding: 40, borderRadius: 200 }}
             />
             <View>
               <Text style={styles.categoryName}>{item.name}</Text>
@@ -35,6 +49,7 @@ const Category = () => {
 };
 
 export default withCustomHeader(Category);
+
 const styles = StyleSheet.create({
   title: {
     fontSize: 20,
@@ -46,11 +61,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.primary,
     marginVertical: 4,
-    flexDirection : 'row',
-    padding : 20,
-    borderRadius : 15,
-    gap : 10,
-    alignItems : 'center',
+    flexDirection: "row",
+    padding: 20,
+    borderRadius: 15,
+    gap: 10,
+    alignItems: "center",
   },
   categoryName: {
     fontSize: 14,

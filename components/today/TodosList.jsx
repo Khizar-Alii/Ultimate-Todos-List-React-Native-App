@@ -1,103 +1,74 @@
-import { StyleSheet, Text, View, FlatList, Animated ,TouchableOpacity} from "react-native";
-import React, { useState, useEffect } from "react";
+import { StyleSheet, Text, View, FlatList, TouchableOpacity } from "react-native";
+import React, { useEffect, useState } from "react";
 import { Colors } from "../../constants/Colors";
 import CheckBox from "react-native-check-box";
 import { router } from "expo-router";
+import { useSQLiteContext } from "expo-sqlite"; 
+
+const TodosList = ({ filteredTodos }) => {
+  const [todosListItems, setTodosListItems] = useState(filteredTodos);
+  const db = useSQLiteContext(); 
 
 
-const TodosList = ({ filteredTodos }) => {  
-  
-  const [todosListItems, setTodosListItems] = useState([]);
+  // Handle checkbox toggle
+  const handleCheckBoxClick = async (item) => {
+    const newCheckedState = item.isChecked === 1 ? 0 : 1;
+    try {
+      // Update the isChecked state in the database
+      await db.runAsync('UPDATE todos SET isChecked = ? WHERE id = ?', [newCheckedState, item.id]);
 
-  // Update todosListItems whenever filteredTodos changes
-  useEffect(() => {
-    const todosWithAnimation = filteredTodos.map((todo) => ({
-      ...todo,
-      slideAnimation: new Animated.Value(0),
-    }));
-    setTodosListItems(todosWithAnimation);
-  }, [filteredTodos]);
-
-  // Handle checkbox toggle and slide animation
-  const handleCheckBoxClick = (id) => {
-    setTodosListItems((prevState) => {
-      const updatedTodos = prevState.map((todo) => {
-        if (todo.id === id) {
-          const updatedTodo = { ...todo, isChecked: !todo.isChecked };
-
-          if (updatedTodo.isChecked) {
-            // Start slide animation
-            Animated.timing(todo.slideAnimation, {
-              toValue: 1,
-              duration: 1000,
-              useNativeDriver: true,
-            }).start(() => {
-              setTodosListItems((prevState) =>
-                prevState.filter((t) => t.id !== id)
-              );
-            });
-          }
-
-          return updatedTodo;
-        }
-        return todo;
-      });
-
-      return updatedTodos;
-    });
+      // Update the local state to reflect the change
+      setTodosListItems((prevTodos) =>
+        prevTodos.map((todo) =>
+          todo.id === item.id ? { ...todo, isChecked: newCheckedState } : todo
+        )
+      );
+    } catch (error) {
+      console.error("Error updating todo:", error);
+    }
   };
 
-  const handlePress = (item) =>{
+  const handlePress = (item) => {
     router.push({
       pathname: "/categoryDetails/Details",
-      params: { item: JSON.stringify(item) }, 
+      params: { item: JSON.stringify(item) },
     });
-  }
-
-  const todoView = ({ item }) => {
-    const translateX = item.slideAnimation.interpolate({
-      inputRange: [0, 1],
-      outputRange: [0, 400],
-    });
-
-    return (
-      <Animated.View
-        style={[styles.todoContainer, { transform: [{ translateX }] }]}
-      >
-        <View
-          style={{
-            backgroundColor: Colors.dark,
-            paddingVertical: 10,
-            paddingHorizontal: 4,
-            borderRadius: 15,
-            flexDirection: "row",
-            gap: 4,
-            overflow: 'hidden',
-          }}
-        >
-          <View style={styles.checkboxContainer}>
-            <CheckBox
-              checkBoxColor={Colors.grey}
-              onClick={() => handleCheckBoxClick(item.id)}
-              style={styles.checkbox}
-              isChecked={item.isChecked}
-              checkedCheckBoxColor={Colors.primary}
-            />
-          </View>
-          <TouchableOpacity onPress={()=>handlePress(item)
-          }>
-            <Text numberOfLines={1} style={styles.title}>
-              {item.title}
-            </Text>
-            <Text numberOfLines={1} style={styles.desc}>
-              {item.desc}
-            </Text>
-            <Text style={styles.date}>{item.date}</Text>
-          </TouchableOpacity>
-        </View>
-      </Animated.View>
-    );
   };
+
+  const todoView = ({ item }) => (    
+    <View style={styles.todoContainer}>
+      <View
+        style={{
+          backgroundColor: Colors.dark,
+          paddingVertical: 10,
+          paddingHorizontal: 4,
+          borderRadius: 15,
+          flexDirection: "row",
+          gap: 4,
+          overflow: 'hidden',
+        }}
+      >
+        <View style={styles.checkboxContainer}>
+          <CheckBox
+            checkBoxColor={Colors.grey}
+            onClick={() => handleCheckBoxClick(item)}
+            style={styles.checkbox}
+            isChecked={item.isChecked === 1}
+            checkedCheckBoxColor={Colors.primary}
+          />
+        </View>
+        <TouchableOpacity onPress={() => handlePress(item)}>
+          <Text numberOfLines={1} style={styles.title}>
+            {item.task}
+          </Text>
+          <Text numberOfLines={1} style={styles.desc}>
+            {item.desc}
+          </Text>
+          <Text style={styles.date}>{item.date}</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
 
   return (
     <View>
@@ -120,8 +91,7 @@ const TodosList = ({ filteredTodos }) => {
 export default TodosList;
 
 const styles = StyleSheet.create({
-  flatListContainer: {
-  },
+  flatListContainer: {},
   todoContainer: {
     display: "flex",
     paddingHorizontal: 20,

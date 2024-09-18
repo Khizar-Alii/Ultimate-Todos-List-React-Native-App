@@ -1,3 +1,4 @@
+import React, { useState } from "react";
 import {
   Alert,
   StyleSheet,
@@ -6,7 +7,6 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import React, { useState } from "react";
 import { Colors } from "../../constants/Colors";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import DateTimePicker from "@react-native-community/datetimepicker";
@@ -14,36 +14,35 @@ import { Picker } from "@react-native-picker/picker";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { useSQLiteContext } from "expo-sqlite";
 
-const AddTodoData = ({ setShowModal, onTodoAdded }) => {
+const AddHabbitData = ({ setShowModal, onHabbitAdded }) => {
   const [date, setDate] = useState(null);
   const [showDatePicker, setShowDatePicker] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState();
-  const [task, setTask] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("Other");
+  const [habitName, setHabitName] = useState("");
   const [desc, setDesc] = useState("");
+  const [frequency, setFrequency] = useState("Daily");
 
   const db = useSQLiteContext();
 
   const handleSubmitData = async () => {
-    if (!date || !task) {
-      Alert.alert("Warning", "Please provide at least a Task and Date to Submit.");
+    if (!date || !habitName) {
+      Alert.alert("Warning", "Please provide at least a Habit Name and Date.");
       return;
     }
     try {
       await db.runAsync(
-        "INSERT INTO todos (task, desc, selectedCategory, date) VALUES (?, ?, ?, ?)",
-        [task, desc, selectedCategory || 'Other', date.toDateString()]
+        "INSERT INTO habits (habitName, description, category, habitDate, frequency) VALUES (?, ?, ?, ?, ?)",
+        [habitName, desc, selectedCategory, date.toDateString(), frequency]
       );
-  
-      // Ensure the modal closes after the todo is added
-      onTodoAdded();      
+
+      onHabbitAdded();
       setShowModal(false);
-      Alert.alert("Success", "Todo Added successfully");
+      Alert.alert("Success", "Habit Added successfully");
     } catch (error) {
-      console.log("Error while adding todos...", error);
-      Alert.alert("Error", "Failed to add Todo. Please try again.");
+      console.log("Error while adding habits...", error);
+      Alert.alert("Error", "Failed to add Habit. Please try again.");
     }
   };
-  
 
   const onDateChange = (event, selectedDate) => {
     if (selectedDate) {
@@ -59,26 +58,26 @@ const AddTodoData = ({ setShowModal, onTodoAdded }) => {
   return (
     <View style={{ padding: 20 }}>
       <View style={styles.inputContainer}>
-        <Text style={styles.label}>What is to be done?</Text>
+        <Text style={styles.label}>Habit Name</Text>
         <TextInput
           style={styles.value}
-          placeholder="e.g Finish homework before 12."
-          value={task}
-          onChangeText={(value) => setTask(value)}
+          placeholder="e.g Drink Juice After Waking Up"
+          value={habitName}
+          onChangeText={(value) => setHabitName(value)}
         />
       </View>
       <View style={styles.inputContainer}>
-        <Text style={styles.label}>Description of Task</Text>
+        <Text style={styles.label}>Description</Text>
         <TextInput
           style={styles.value}
-          placeholder="e.g Share the Homework with the teacher"
+          placeholder="e.g Buy Fruits for tomorrow juice"
           value={desc}
           onChangeText={(value) => setDesc(value)}
         />
       </View>
 
       <View style={styles.inputContainer}>
-        <Text style={styles.label}>Due Date</Text>
+        <Text style={styles.label}>Added Date</Text>
         <TouchableOpacity
           style={styles.dateBtn}
           onPress={showDatePickerHandler}
@@ -105,7 +104,7 @@ const AddTodoData = ({ setShowModal, onTodoAdded }) => {
         />
       )}
       <View style={styles.inputContainer}>
-        <Text style={styles.label}>Add to Category</Text>
+        <Text style={styles.label}>Category</Text>
         <Picker
           selectedValue={selectedCategory}
           onValueChange={(itemValue) => setSelectedCategory(itemValue)}
@@ -115,6 +114,17 @@ const AddTodoData = ({ setShowModal, onTodoAdded }) => {
           <Picker.Item label="Personal" value="Personal" />
           <Picker.Item label="Family" value="Family" />
           <Picker.Item label="Sport" value="Sport" />
+        </Picker>
+      </View>
+      <View style={styles.inputContainer}>
+        <Text style={styles.label}>Frequency</Text>
+        <Picker
+          selectedValue={frequency}
+          onValueChange={(itemValue) => setFrequency(itemValue)}
+        >
+          <Picker.Item label="Daily" value="Daily" />
+          <Picker.Item label="Weekly" value="Weekly" />
+          <Picker.Item label="Monthly" value="Monthly" />
         </Picker>
       </View>
       <View style={{ flexDirection: "row", marginVertical: 10 }}>
@@ -131,8 +141,6 @@ const AddTodoData = ({ setShowModal, onTodoAdded }) => {
     </View>
   );
 };
-
-export default AddTodoData;
 
 const styles = StyleSheet.create({
   inputContainer: {
@@ -169,3 +177,5 @@ const styles = StyleSheet.create({
     borderRadius: 99,
   },
 });
+
+export default AddHabbitData;

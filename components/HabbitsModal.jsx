@@ -1,29 +1,28 @@
 import React from "react";
 import { View, Alert, Modal, StyleSheet } from "react-native";
 import { Colors } from "@/constants/Colors";
-import AddTodoData from "../components/today/AddTodoData";
+import AddHabbitData from "../components/habbits/AddHabbitData";
 
-const AddTodoModal = ({ showModal, setShowModal, onTodoAdded }) => {
+const HabbitsModal = ({ showModal, setShowModal, onHabbitAdded }) => {
   return (
     <Modal
       animationType="slide"
       transparent={true}
       visible={showModal}
       onRequestClose={() => {
-        Alert.alert("Modal has been closed.");
         setShowModal(!showModal);
       }}
     >
       <View style={styles.centeredView}>
         <View style={styles.modalView}>
-          <AddTodoData setShowModal={setShowModal} onTodoAdded={onTodoAdded} />
+          <AddHabbitData setShowModal={setShowModal} onHabbitAdded={onHabbitAdded} />
         </View>
       </View>
     </Modal>
   );
 };
 
-export default AddTodoModal;
+export default HabbitsModal;
 
 const styles = StyleSheet.create({
   centeredView: {
@@ -33,7 +32,7 @@ const styles = StyleSheet.create({
     position: "absolute",
     bottom: 0,
     backgroundColor: Colors.light,
-    height: "80%",
+    height: "90%",
     width: "100%",
     shadowColor: "#000",
     shadowOffset: {

@@ -1,21 +1,32 @@
-import { TouchableOpacity, View, Image } from "react-native";
+import {
+  TouchableOpacity,
+  View,
+  Image,
+  FlatList,
+  Text,
+  StyleSheet
+} from "react-native";
 import React, { useEffect, useState } from "react";
-import { useLocalSearchParams, useNavigation } from "expo-router";
+import { router, useLocalSearchParams, useNavigation } from "expo-router";
 import { Colors } from "../../constants/Colors";
-import { todos } from "../../constants/Todos";
 import NoTodo from "../../components/today/NoTodo";
 import FontAwesome6 from "@expo/vector-icons/FontAwesome6";
 import TodosList from "../../components/today/TodosList";
-import Modal from "@/components/ModalData"; 
+import Modal from "@/components/ModalData";
+import { useSQLiteContext } from "expo-sqlite";
 
-const categories = () => {
+const Categories = () => {
   const [categoryTodos, setCategoryTodos] = useState([]);
   const [modalVisible, setModalVisible] = useState(false);
   const { item } = useLocalSearchParams();
   const parsedItem = item ? JSON.parse(item) : null;
+  const[refreshing,setRefreshing] = useState(false);
+
   const navigation = useNavigation();
+  const db = useSQLiteContext();
 
   useEffect(() => {
+    // Set header options for the screen
     navigation.setOptions({
       headerShown: true,
       headerStyle: {
@@ -50,24 +61,111 @@ const categories = () => {
   }, []);
 
   useEffect(() => {
-    let filterTodos = todos.filter((todo) => todo.category === parsedItem.name);
-    setCategoryTodos(filterTodos);
-  }, [todos]);
+    fetchCategoryTodos();
+  }, [parsedItem]);
+  // Fetch todos for the selected category from the database
+  const fetchCategoryTodos = async () => {
+    try {
+      if (parsedItem) {
+        const todos = await db.getAllAsync(
+          "SELECT * FROM todos WHERE selectedCategory = ?",
+          parsedItem
+        );
+        setCategoryTodos(todos);
+      }
+    } catch (error) {
+      console.error("Error fetching todos for category:", error);
+    }
+  };
+
+
+  const handlePress = (item) => {
+    router.push({
+      pathname: "/categoryDetails/Details",
+      params: { item: JSON.stringify(item) },
+    });
+  };
+
+  const todoView = ({ item }) => (
+    <View style={styles.todoContainer}>
+      <View
+        style={{
+          backgroundColor: Colors.dark,
+          paddingVertical: 10,
+          paddingHorizontal: 4,
+          borderRadius: 15,
+          flexDirection: "row",
+          gap: 4,
+          overflow: "hidden",
+        }}
+      >
+        <TouchableOpacity onPress={() => handlePress(item)}>
+          <Text numberOfLines={1} style={styles.title}>
+            {item.task}
+          </Text>
+          <Text numberOfLines={1} style={styles.desc}>
+            {item.desc}
+          </Text>
+          <Text style={styles.date}>{item.date}</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
 
   return (
     <View
       style={{ backgroundColor: Colors.black, flex: 1, paddingVertical: 30 }}
     >
       <Modal modalVisible={modalVisible} setModalVisible={setModalVisible} />
-      {/* <Text style={{fontSize : 20,color:'white'}}>Explore</Text> */}
 
       {categoryTodos.length === 0 ? (
         <NoTodo />
       ) : (
-        <TodosList filteredTodos={categoryTodos} />
+        <View>
+          <FlatList
+          refreshing={refreshing}
+          onRefresh={()=>{fetchCategoryTodos()}}
+            data={categoryTodos}
+            renderItem={todoView}
+            keyExtractor={(item) => item.id.toString()}
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.flatListContainer}
+            getItemLayout={(data, index) => ({
+              length: 80,
+              offset: 80 * index,
+              index,
+            })}
+          />
+        </View>
       )}
     </View>
   );
 };
 
-export default categories;
+export default Categories;
+
+const styles = StyleSheet.create({
+  flatListContainer: {},
+  todoContainer: {
+    display: "flex",
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+  },
+  title: {
+    color: Colors.light,
+    fontWeight: "700",
+    fontSize: 16,
+    letterSpacing: 1,
+  },
+  desc: {
+    color: Colors.grey,
+    fontWeight: "300",
+    fontSize: 12,
+    paddingVertical: 4,
+  },
+  date: {
+    color: Colors.black,
+    fontWeight: "600",
+    fontSize: 15,
+  }
+});

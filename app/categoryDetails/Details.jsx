@@ -1,15 +1,17 @@
-import { StyleSheet, Text, View, TouchableOpacity, Image } from "react-native";
+import { StyleSheet, Text, View, TouchableOpacity, Image, Alert } from "react-native";
 import React, { useState, useEffect } from "react";
 import Modal from "@/components/ModalData";
-import { useLocalSearchParams, useNavigation } from "expo-router";
+import { router, useLocalSearchParams, useNavigation } from "expo-router";
 import { Colors } from "../../constants/Colors";
 import FontAwesome6 from "@expo/vector-icons/FontAwesome6";
+import { useSQLiteContext } from "expo-sqlite"; // Import useSQLiteContext
 
 const Details = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const { item } = useLocalSearchParams();
   const parsedItem = item ? JSON.parse(item) : null;
   const navigation = useNavigation();
+  const db = useSQLiteContext(); 
 
   useEffect(() => {
     navigation.setOptions({
@@ -45,6 +47,19 @@ const Details = () => {
     });
   }, []);
 
+  // Function to delete the todo item from the database
+  const handleDelete = async () => {
+    try {
+      // Delete the item from the database
+      await db.runAsync('DELETE FROM todos WHERE id = ?', [parsedItem.id]);
+      // Navigate back to the previous screen
+      router.replace("/(tabs)/today")
+    } catch (error) {
+      console.error("Error deleting todo:", error);
+      Alert.alert("Error", "Failed to delete the item.");
+    }
+  };
+
   return (
     <View style={styles.screen}>
       <Modal modalVisible={modalVisible} setModalVisible={setModalVisible} />
@@ -60,7 +75,7 @@ const Details = () => {
               }}
             />
           </View>
-          <Text style={styles.value}>{parsedItem?.category}</Text>
+          <Text style={styles.value}>{parsedItem?.selectedCategory}</Text>
         </View>
 
         <View style={styles.data}>
@@ -73,7 +88,7 @@ const Details = () => {
               }}
             />
           </View>
-          <Text style={styles.value}>{parsedItem?.title}</Text>
+          <Text style={styles.value}>{parsedItem?.task}</Text>
         </View>
 
         <View style={styles.data}>
@@ -101,11 +116,17 @@ const Details = () => {
           </View>
           <Text style={styles.value}>{parsedItem?.date}</Text>
         </View>
+        <View style={[styles.data, { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }]}>
+          <Text style={styles.label}>Completed</Text>
+          <Text style={styles.value}>{parsedItem?.isChecked == 0 ? "Not Completed" : 'Completed'}</Text>
+        </View>
       </View>
-
       {/* Buttons Section */}
       <View style={styles.buttonContainer}>
-        <TouchableOpacity style={styles.button} onPress={() => console.log('Delete action')}>
+        <TouchableOpacity
+          style={styles.button}
+          onPress={handleDelete} // Call handleDelete on press
+        >
           <Image
             source={{
               uri: "https://cdn-icons-png.flaticon.com/128/2603/2603105.png",
@@ -115,7 +136,10 @@ const Details = () => {
           <Text style={styles.buttonText}>Delete</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.button} onPress={() => console.log('Edit action')}>
+        <TouchableOpacity
+          style={styles.button}
+          onPress={() => console.log("Edit action")}
+        >
           <Image
             source={{
               uri: "https://cdn-icons-png.flaticon.com/128/9512/9512757.png",
