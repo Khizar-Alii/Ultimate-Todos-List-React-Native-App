@@ -1,4 +1,5 @@
 import {
+  ActivityIndicator,
   Alert,
   StyleSheet,
   Text,
@@ -13,6 +14,7 @@ import DateTimePicker from "@react-native-community/datetimepicker";
 import { Picker } from "@react-native-picker/picker";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { useSQLiteContext } from "expo-sqlite";
+import { uploadTodosFirebase } from "../../Firebase/index";
 
 const AddTodoData = ({ setShowModal, onTodoAdded }) => {
   const [date, setDate] = useState(null);
@@ -20,32 +22,54 @@ const AddTodoData = ({ setShowModal, onTodoAdded }) => {
   const [selectedCategory, setSelectedCategory] = useState();
   const [task, setTask] = useState("");
   const [desc, setDesc] = useState("");
+  const[addTodoLoading,setAddTodoLoading] = useState(false);//show this loading until it adds the todo in the local-db and firebase
 
   // this component is pass by addTodoModal to add the todo
 
   const db = useSQLiteContext();
 
   const handleSubmitData = async () => {
+    setAddTodoLoading(true)
     if (!date || !task) {
-      Alert.alert("Warning", "Please provide at least a Task and Date to Submit.");
+      Alert.alert(
+        "Warning",
+        "Please provide at least a Task and Date to Submit."
+      );
+      setAddTodoLoading(false)
       return;
     }
     try {
-      await db.runAsync(
+      const result = await db.runAsync(
         "INSERT INTO todos (task, desc, selectedCategory, date) VALUES (?, ?, ?, ?)",
-        [task, desc, selectedCategory || 'Other', date.toDateString()]
+        [task, desc, selectedCategory || "Other", date.toDateString()]
       );
-  
+      const insertedId = result.lastInsertRowId;
+      // Upload the same todo to Firebase
+      const firebaseUploadSuccess = await uploadTodosFirebase({
+        id : insertedId,
+        task,
+        desc,
+        selectedCategory,
+        date,
+      });
+
+      if (firebaseUploadSuccess) {
+        console.log("Todo uploaded to Firebase successfully!");
+      } else {
+        console.log("Failed to upload todo to Firebase");
+      }
       // Ensure the modal closes after the todo is added
-      onTodoAdded();      
+      onTodoAdded();
       setShowModal(false);
+      setAddTodoLoading(false)
       Alert.alert("Success", "Todo Added successfully");
     } catch (error) {
       console.log("Error while adding todos...", error);
       Alert.alert("Error", "Failed to add Todo. Please try again.");
+    }finally{
+      setAddTodoLoading(false)
     }
   };
-  
 
   const onDateChange = (event, selectedDate) => {
     if (selectedDate) {
@@ -59,6 +83,9 @@ const AddTodoData = ({ setShowModal, onTodoAdded }) => {
   };
 
   return (
+    <>
+    {
+      addTodoLoading ? <ActivityIndicator style={{flex:1,justifyContent:'center',alignItems:'center'}} size={'large'} color={Colors.primary} /> :
     <View style={{ padding: 20 }}>
       <View style={styles.inputContainer}>
         <Text style={styles.label}>What is to be done?</Text>
@@ -131,6 +158,8 @@ const AddTodoData = ({ setShowModal, onTodoAdded }) => {
         </TouchableOpacity>
       </View>
     </View>
+    }
+    </>
   );
 };
 

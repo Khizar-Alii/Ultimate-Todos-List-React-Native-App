@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, StyleSheet, FlatList, TouchableOpacity } from "react-native";
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from "react-native";
 import withCustomHeader from "../../../components/withCustomHeader/withCustomHeader";
 import NoTodo from "../../../components/today/NoTodo";
 import { Colors } from "../../../constants/Colors";
@@ -8,7 +8,7 @@ import CheckBox from "react-native-check-box";
 import { router } from "expo-router";
 
 const Tasks = () => {
-  const [finishedTask, setFinishedTask] = useState([]); 
+  const [finishedTask, setFinishedTask] = useState([]);
   const [remainingTasks, setRemainingTasks] = useState([]);
   const db = useSQLiteContext();
 
@@ -17,13 +17,11 @@ const Tasks = () => {
     fetchTodos();
   }, []);
 
-  // to get both the finished tasks and remaining tasks
   const fetchTodos = async () => {
     await fetchRemainingTodos();
     await fetchFinishedTodos();
   };
 
-  // to get and remaining tasks
   const fetchRemainingTodos = async () => {
     try {
       const remaining = await db.getAllAsync('SELECT * FROM todos WHERE isChecked = 0');
@@ -32,7 +30,7 @@ const Tasks = () => {
       console.log("Error while fetching remaining todos...", error);
     }
   };
-  // to get and finished tasks
+
   const fetchFinishedTodos = async () => {
     try {
       const finished = await db.getAllAsync('SELECT * FROM todos WHERE isChecked = 1');
@@ -43,54 +41,50 @@ const Tasks = () => {
   };
 
   return (
-    <View style={{ backgroundColor: Colors.black, flex: 1, paddingBottom: 80 }}>
-      <Text style={styles.heading}>Remaining</Text>
-      {remainingTasks.length === 0 ? (
-        <NoTodo />
-      ) : (
-        <View style={{ flex: 1 }}>
-          <TodosList filteredTodos={remainingTasks} onTodoUpdate={fetchTodos} />
-        </View>
-      )}
+    <View style={{ backgroundColor: Colors.black, flex: 1 }}>
+      <ScrollView contentContainerStyle={styles.scrollContainer}>
+        <Text style={styles.heading}>Remaining</Text>
+        {remainingTasks.length === 0 ? (
+          <NoTodo />
+        ) : (
+          <View>
+            <TodosList filteredTodos={remainingTasks} onTodoUpdate={fetchTodos} />
+          </View>
+        )}
 
-      <Text style={styles.heading}>Finished</Text>
-      {finishedTask.length === 0 ? (
-        <NoTodo />
-      ) : (
-        <View style={{ flex: 1 }}>
-          <TodosList filteredTodos={finishedTask} onTodoUpdate={fetchTodos} />
-        </View>
-      )}
+        <Text style={styles.heading}>Finished</Text>
+        {finishedTask.length === 0 ? (
+          <NoTodo />
+        ) : (
+          <View>
+            <TodosList filteredTodos={finishedTask} onTodoUpdate={fetchTodos} />
+          </View>
+        )}
+      </ScrollView>
     </View>
   );
 };
 
 export default withCustomHeader(Tasks);
 
-// TodosList component to display the list of todos (both remaining and finished)
 const TodosList = ({ filteredTodos, onTodoUpdate }) => {
-  const[refresing,setRefreshing] = useState(false)
   const [todosListItems, setTodosListItems] = useState(filteredTodos);
   const db = useSQLiteContext();
 
   useEffect(() => {
-    setTodosListItems(filteredTodos); 
+    setTodosListItems(filteredTodos);
   }, [filteredTodos]);
 
-  // Handle checkbox toggle
   const handleCheckBoxClick = async (item) => {
     const newCheckedState = item.isChecked === 1 ? 0 : 1;
     try {
-      // Update the isChecked state in the database
       await db.runAsync('UPDATE todos SET isChecked = ? WHERE id = ?', [newCheckedState, item.id]);
-
-      // Refetch the todos to update the UI
       onTodoUpdate();
     } catch (error) {
       console.error("Error updating todo:", error);
     }
   };
-  // route to the details screen to see the details of the todo
+
   const handlePress = (item) => {
     router.push({
       pathname: "/categoryDetails/Details",
@@ -125,33 +119,29 @@ const TodosList = ({ filteredTodos, onTodoUpdate }) => {
 
   return (
     <View>
-      <FlatList
-      refreshing={refresing}
-      onRefresh={()=>onTodoUpdate()}
-        data={todosListItems}
-        renderItem={todoView}
-        keyExtractor={(item) => item.id.toString()}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.flatListContainer}
-        getItemLayout={(data, index) => ({
-          length: 80,
-          offset: 80 * index,
-          index,
-        })}
-      />
+      {filteredTodos.map((item) => (
+        <View key={item.id} style={styles.flatListContainer}>
+          {todoView({ item })}
+        </View>
+      ))}
     </View>
   );
 };
 
 // Styling
 const styles = StyleSheet.create({
+  scrollContainer: {
+    paddingBottom: 80,
+  },
   heading: {
     color: Colors.light,
     fontSize: 20,
     fontWeight: "700",
     padding: 20,
   },
-  flatListContainer: {},
+  flatListContainer: {
+    marginBottom: 10,
+  },
   todoContainer: {
     display: "flex",
     paddingHorizontal: 20,

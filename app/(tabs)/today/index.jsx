@@ -7,6 +7,7 @@ import {
   Text,
   Image,
   Alert,
+  ActivityIndicator,
 } from "react-native";
 // TO define the same header for everyscreen , so i made a highOrder function which take component as a prop and then in that i set the Custom header
 import withCustomHeader from "../../../components/withCustomHeader/withCustomHeader";
@@ -14,25 +15,29 @@ import { Colors } from "../../../constants/Colors";
 import Plus from "../../../components/CustomButton/Plus";
 import NoTodo from "../../../components/today/NoTodo";
 import AddTodoModal from "../../../components/AddTodoModal";
-import EditTodoModal from "../../../components/EditTodoModal"; 
+import EditTodoModal from "../../../components/EditTodoModal";
 import { useSQLiteContext } from "expo-sqlite";
 import CheckBox from "react-native-check-box";
 import { router } from "expo-router";
+import {
+  GetAllTodosandDelWithId,
+  updateCheckboxInFirebase,
+} from "../../../Firebase/index";
 
 const Today = () => {
   const [todos, setTodos] = useState([]); //store all the todos
   const [showModal, setShowModal] = useState(false); // to open a modal for adding todos
   const [editModal, setEditModal] = useState(false); // to open a edit todo modal
-  const [editTodo, setEditTodo] = useState(null);// pass the todo to edit
-  const[refreshing,setRefreshing] = useState(false); // to refresh the todos
-
+  const [editTodo, setEditTodo] = useState(null); // pass the todo to edit
+  const [refreshing, setRefreshing] = useState(false); // to refresh the todos
+  const [checkBoxLoading, setCheckBoxLoading] = useState(false); //show loading until it updates the isChecked on firebase
+  const [deleteTodoLoading, setDeleteTodoLoading] = useState(false); //show loading until it deletes the todo from firebase
   const db = useSQLiteContext();
 
   useEffect(() => {
     // when mount Get all todos
     fetchTodos();
   }, []);
-
 
   // to fetch all the todos from the sqllite DB
   const fetchTodos = async () => {
@@ -44,27 +49,27 @@ const Today = () => {
     }
   };
 
-
   // function when you click on the checkbox it mark the checkbox is checked and then update the checkbox in DB and the todos list
   const handleCheckBoxClick = async (item) => {
+    setCheckBoxLoading(true);
     const newCheckedState = item.isChecked === 1 ? 0 : 1;
     try {
       await db.runAsync("UPDATE todos SET isChecked = ? WHERE id = ?", [
         newCheckedState,
         item.id,
       ]);
-
+      // also update it on the firebase
+      await updateCheckboxInFirebase(item.id, newCheckedState);
       setTodos((prevTodos) =>
         prevTodos.map((todo) =>
           todo.id === item.id ? { ...todo, isChecked: newCheckedState } : todo
         )
       );
+      setCheckBoxLoading(false);
     } catch (error) {
       console.error("Error updating todo:", error);
     }
   };
-
-
 
   // route to the details screen and to show the details of the todo
   const handlePress = (item) => {
@@ -81,14 +86,29 @@ const Today = () => {
       "Are you sure you want to delete this todo?",
       [
         { text: "Cancel", style: "cancel" },
-        { text: "Delete", onPress: async () => {
+        {
+          text: "Delete",
+          onPress: async () => {
             try {
+              setDeleteTodoLoading(true);
               await db.runAsync("DELETE FROM todos WHERE id = ?", id);
+              console.log("Todo deleted from SQLite with id:", id);
+
+              // Delete from Firebase
+              const firebaseDeleteSuccess = await GetAllTodosandDelWithId(id);
+              if (firebaseDeleteSuccess) {
+                console.log("Todo deleted from Firebase successfully!");
+              } else {
+                console.log("Failed to delete todo from Firebase.");
+              }
               fetchTodos();
+              setDeleteTodoLoading(false);
             } catch (error) {
               console.log("Error while deleting todo...", error);
+            } finally {
+              setDeleteTodoLoading(false);
             }
-          }
+          },
         },
       ],
       { cancelable: true }
@@ -104,19 +124,24 @@ const Today = () => {
   // passed this view to the flatlist which accepts the item as a param and responsible for the display of the content
   const todoView = ({ item }) => (
     <View style={styles.todoContainer}>
-      <View
-        style={styles.todoContent}
-      >
+      <View style={styles.todoContent}>
         <View style={styles.checkboxContainer}>
-          <CheckBox
-            checkBoxColor={Colors.grey}
-            onClick={() => handleCheckBoxClick(item)}
-            style={styles.checkbox}
-            isChecked={item.isChecked === 1}
-            checkedCheckBoxColor={Colors.primary}
-          />
+          {checkBoxLoading ? (
+            <ActivityIndicator color={Colors.primary} size={"small"} />
+          ) : (
+            <CheckBox
+              checkBoxColor={Colors.grey}
+              onClick={() => handleCheckBoxClick(item)}
+              style={styles.checkbox}
+              isChecked={item.isChecked === 1}
+              checkedCheckBoxColor={Colors.primary}
+            />
+          )}
         </View>
-        <TouchableOpacity style={styles.todoTextContainer} onPress={()=>handlePress(item)}>
+        <TouchableOpacity
+          style={styles.todoTextContainer}
+          onPress={() => handlePress(item)}
+        >
           <Text numberOfLines={1} style={styles.title}>
             {item.task}
           </Text>
@@ -128,13 +153,17 @@ const Today = () => {
         <View style={styles.iconContainer}>
           <TouchableOpacity onPress={() => deleteTodo(item.id)}>
             <Image
-              source={{ uri: "https://cdn-icons-png.flaticon.com/128/2603/2603105.png" }}
+              source={{
+                uri: "https://cdn-icons-png.flaticon.com/128/2603/2603105.png",
+              }}
               style={styles.icon}
             />
           </TouchableOpacity>
           <TouchableOpacity onPress={() => openEditModal(item)}>
             <Image
-              source={{ uri: "https://cdn-icons-png.flaticon.com/128/143/143437.png" }}
+              source={{
+                uri: "https://cdn-icons-png.flaticon.com/128/143/143437.png",
+              }}
               style={styles.icon}
             />
           </TouchableOpacity>
@@ -146,14 +175,18 @@ const Today = () => {
   return (
     <View style={styles.container}>
       <View style={styles.content}>
-        {todos.length === 0 ? (
+        {deleteTodoLoading ? (
+          // Show ActivityIndicator when deleting a todo
+          <ActivityIndicator size="large" color={Colors.primary} />
+        ) : // Render FlatList or NoTodo based on whether there are todos
+        todos.length === 0 ? (
           <NoTodo /> // just a picture and a text that says no todo
         ) : (
           <FlatList
             data={todos}
             renderItem={todoView}
             refreshing={refreshing}
-            onRefresh={()=>fetchTodos()}
+            onRefresh={() => fetchTodos()}
             keyExtractor={(item) => item.id.toString()}
             showsVerticalScrollIndicator={false}
             contentContainerStyle={styles.flatListContainer}
@@ -161,8 +194,8 @@ const Today = () => {
         )}
       </View>
       {/* plus opens a modal to add the todo */}
-      <Plus onPress={() => setShowModal(true)} /> 
-        {/* AddTodoModal this component/modal takes props showModal setShowModal and onTodoAdded -> showModal & setShowModal to handle open and close modal and onTodoAdded passed this when todo is added update the todos in Ui */}
+      <Plus onPress={() => setShowModal(true)} />
+      {/* AddTodoModal this component/modal takes props showModal setShowModal and onTodoAdded -> showModal & setShowModal to handle open and close modal and onTodoAdded passed this when todo is added update the todos in Ui */}
       <AddTodoModal
         showModal={showModal}
         setShowModal={setShowModal}
