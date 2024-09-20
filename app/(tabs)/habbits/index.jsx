@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   ScrollView,
   Image,
+  ActivityIndicator,
 } from "react-native";
 import withCustomHeader from "../../../components/withCustomHeader/withCustomHeader";
 import { Colors } from "../../../constants/Colors";
@@ -14,6 +15,7 @@ import HabbitsModal from "../../../components/HabbitsModal";
 import EditHabitModal from "../../../components/EditHabitModal";
 import ConfirmationModal from "../../../components/ConfirmationModal";
 import { useSQLiteContext } from "expo-sqlite";
+import {GetAllHabbitsandDelWithId} from "../../../Firebase/index"
 
 const Habbits = () => {
   const [habitModal, setHabitModal] = useState(false); // states to conditionally open and close add habbit modal
@@ -22,6 +24,7 @@ const Habbits = () => {
   const [confirmationModal, setConfirmationModal] = useState(false);
   const [habitToDelete, setHabitToDelete] = useState(null); // which habbit is clicked to delete
   const [habitsByCategory, setHabitsByCategory] = useState({}); //store the habbits by category 
+  const[loadingDeleteHabbit,setLoadingDeleteHabbit] = useState(false); //show the loading until the habbit is deleted and updated in local-db and firebase
  
   
   const db = useSQLiteContext();
@@ -57,11 +60,21 @@ const Habbits = () => {
 
   // delete the habbit from db and update the ui
   const deleteHabit = async (id) => {
+    setLoadingDeleteHabbit(true)
     try {
       await db.runAsync("DELETE FROM habits WHERE id = ?", id);
+      const firebaseDeleteSuccess =  await GetAllHabbitsandDelWithId(id)
+      if (firebaseDeleteSuccess) {
+        console.log("Habbit deleted from Firebase successfully!");
+      } else {
+        console.log("Failed to delete Habbit from Firebase.");
+      }
       fetchHabits();
+      setLoadingDeleteHabbit(false)
     } catch (error) {
       console.log("Error while deleting habit...", error);
+    }finally{
+      setLoadingDeleteHabbit(false)
     }
   };
   // open the edit habbit modal and pass the habbit to be edit
@@ -126,6 +139,9 @@ const Habbits = () => {
 
   return (
     <>
+    {
+      loadingDeleteHabbit ? <ActivityIndicator style={{justifyContent:'center',alignItems:'center',backgroundColor:Colors.dark,flex:1}} /> : 
+    
       <ScrollView
         contentContainerStyle={{ paddingBottom: 100 }}
         style={styles.container}
@@ -153,6 +169,7 @@ const Habbits = () => {
         {/* map the categories */}
         {categories.map(renderCategory)}
       </ScrollView>
+      }
       <Plus onPress={() => setHabitModal(true)} />
     </>
   );

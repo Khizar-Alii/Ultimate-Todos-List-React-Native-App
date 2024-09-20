@@ -7,16 +7,18 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
+  ActivityIndicator,
 } from "react-native";
 import { Colors } from "@/constants/Colors";
 import { useSQLiteContext } from "expo-sqlite";
+import { GetAllHabbitsandUpdateWithId } from "../Firebase/index";
 
 const EditHabitModal = ({ showModal, setShowModal, habit, onUpdate }) => {
   const [habitName, setHabitName] = useState("");
   const [description, setDescription] = useState("");
+  const [loadingHabbitUpdate, setLoadingHabbitUpdate] = useState(false);
 
-
-    // this is the edit habbit modal  which takes showModal & setshowmodal to handle opening and closing of modal and habit which is to be edited and onUpdate to update the ui immediately after the editing the todo
+  // this is the edit habbit modal  which takes showModal & setshowmodal to handle opening and closing of modal and habit which is to be edited and onUpdate to update the ui immediately after the editing the todo
 
   const db = useSQLiteContext();
 
@@ -28,8 +30,10 @@ const EditHabitModal = ({ showModal, setShowModal, habit, onUpdate }) => {
   }, [habit]);
 
   const handleUpdate = async () => {
+    setLoadingHabbitUpdate(true);
     if (!habitName) {
       Alert.alert("Warning", "Please provide a Habit Name.");
+      setLoadingHabbitUpdate(false);
       return;
     }
     try {
@@ -37,12 +41,25 @@ const EditHabitModal = ({ showModal, setShowModal, habit, onUpdate }) => {
         "UPDATE habits SET habitName = ?, description = ? WHERE id = ?",
         [habitName, description, habit.id]
       );
+      const updateHabbit = await GetAllHabbitsandUpdateWithId(
+        habit.id,
+        habitName,
+        description
+      );
+      if (updateHabbit) {
+        console.log("Habbit updated to Firebase successfully!");
+      } else {
+        console.log("Failed to update Habbit to Firebase");
+      }
       setShowModal(false);
       onUpdate(); // Refresh the habits list
+      setLoadingHabbitUpdate(false);
       Alert.alert("Success", "Habit updated successfully");
     } catch (error) {
       console.log("Error while updating habit...", error);
       Alert.alert("Error", "Failed to update Habit. Please try again.");
+    } finally {
+      setLoadingHabbitUpdate(false);
     }
   };
 
@@ -53,38 +70,42 @@ const EditHabitModal = ({ showModal, setShowModal, habit, onUpdate }) => {
       visible={showModal}
       onRequestClose={() => setShowModal(!showModal)}
     >
-      <View style={styles.centeredView}>
-        <View style={styles.modalView}>
-          <Text style={styles.label}>Habit Name</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Enter habit name"
-            value={habitName}
-            onChangeText={(text) => setHabitName(text)}
-          />
-          <Text style={styles.label}>Description</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Enter description"
-            value={description}
-            onChangeText={(text) => setDescription(text)}
-          />
-          <View style={styles.buttonContainer}>
-            <TouchableOpacity
-              style={[styles.button, styles.cancelButton]}
-              onPress={() => setShowModal(false)}
-            >
-              <Text style={styles.buttonText}>Cancel</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.button, styles.updateButton]}
-              onPress={handleUpdate}
-            >
-              <Text style={styles.buttonText}>Update</Text>
-            </TouchableOpacity>
+      {loadingHabbitUpdate ? (
+        <ActivityIndicator size={"large"} color={Colors.primary} />
+      ) : (
+        <View style={styles.centeredView}>
+          <View style={styles.modalView}>
+            <Text style={styles.label}>Habit Name</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Enter habit name"
+              value={habitName}
+              onChangeText={(text) => setHabitName(text)}
+            />
+            <Text style={styles.label}>Description</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Enter description"
+              value={description}
+              onChangeText={(text) => setDescription(text)}
+            />
+            <View style={styles.buttonContainer}>
+              <TouchableOpacity
+                style={[styles.button, styles.cancelButton]}
+                onPress={() => setShowModal(false)}
+              >
+                <Text style={styles.buttonText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.button, styles.updateButton]}
+                onPress={handleUpdate}
+              >
+                <Text style={styles.buttonText}>Update</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
-      </View>
+      )}
     </Modal>
   );
 };
